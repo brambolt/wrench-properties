@@ -30,14 +30,14 @@ ext {
   ]]
   inceptionYear = '2017'
   isGitHosted = true
-  isOpenSource = false // Enables publishing to plugins.gradle.org and Bintray
+  isOpenSource = true // Enables publishing to plugins.gradle.org and Bintray
   licenses = [[
     id: 'Apache-2.0',
     name: 'The Apache Software License, Version 2.0',
     url: 'http://www.apache.org/licenses/LICENSE-2.0.txt'
   ]]
   release = bramboltRelease
-  vcsUrl = 'https://github.com/brambolt/wrenches'
+  vcsUrl = 'https://github.com/brambolt/wrench-properties'
 }
 
 apply plugin: 'com.brambolt.gradle.build.library'
