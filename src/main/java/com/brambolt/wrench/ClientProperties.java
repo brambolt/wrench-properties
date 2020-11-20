@@ -35,13 +35,8 @@ public class ClientProperties extends Specification {
 
     /**
      * This is the group prefix for the client properties.
-     * <p>
-     * For the Brambolt Calypso DevOps Center instance, the group property is
-     * <code>com.brambolt.calypso.devopscenter</code>.
-     * <p>
-     * For the Brambolt Calypso instance, the group property would be
-     * <code>com.brambolt.calypso</code>, but the Calypso client properties are
-     * not yet correctly prefixed so the group identifier reference is nulled.
+     *
+     * <p>The structure is usually &lt;client-prefix%gt;-%lt;application-name%gt;.</p>
      */
     private final String groupId;
 
