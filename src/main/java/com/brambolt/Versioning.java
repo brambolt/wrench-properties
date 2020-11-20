@@ -3,12 +3,12 @@ package com.brambolt;
 public class Versioning {
 
     /**
-     * Converts 16.1.0.8 to 161008 and 16.1.0.10 to 161010.
+     * Converts 10.1.2.3 to 101203 and 10.1.2.10 to 101210.
      *
-     * The parameter version must have four segments (16.1.0.39).
+     * <p>The parameter version must have four segments (12.3.4.56).</p>
      *
-     * The fourth segment (patch level) will be zero-padded to two digits if
-     * it has only one digit.
+     * <p>The fourth segment (patch level) will be zero-padded to two digits if
+     * it has only one digit.</p>
      *
      * @param version The version to convert
      * @return The short-form version, without periods

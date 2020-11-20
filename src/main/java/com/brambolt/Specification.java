@@ -122,18 +122,18 @@ public class Specification extends Properties {
     }
 
     /**
-     * This override is ugly but necessary; if <code>#get</code> in inadvertently invoked
-     * instead of <code>#getProperty</code> then all is well as long as the parameter
-     * name specifies a client property. But, if the name specifies an application
-     * property then <code>Hashtable#get</code> does not look at <code>Properties#defaults</code>
-     * and the application property will not be returned!
+     * This override is ugly but necessary; if <code>#get</code> in inadvertently
+     * invoked instead of <code>#getProperty</code> then all is well as long as
+     * the parameter name specifies a property that is present. But, if the name
+     * specifies a property that is only available in defaults then it will not
+     * be returned.
      *
      * @param name The name of the property to get the value for
      * @return The property value, or null if no value is present
      */
     @Override
     public String get(Object name) {
-        // Ensure defaults (application properties) are also checked:
+        // Ensure defaults are also checked:
         return getProperty(name.toString()); // Strings, GStringImpls, other things...?
     }
 
@@ -150,19 +150,60 @@ public class Specification extends Properties {
         return null != getProperty((String) name);
     }
 
+    /**
+     * Accessor for a boolean property; returns true if the property value is
+     * "true", returns false in all other cases unless the property is not
+     * present in which case null is returned.
+     *
+     * @param name The property name to access
+     * @return The boolean value for the parameter property
+     */
     public Boolean getBoolean(String name) {
         return getBoolean(name, null);
     }
 
+    /**
+     * Accessor for a boolean property; returns true if the property value is
+     * "true", returns false in all other cases except when the property is not
+     * present when the provided default value is returned.
+     *
+     * @param name The property name to access
+     * @param defaultValue The value to return if the property is not present
+     * @return The boolean value for the parameter property, or the default
+     */
     public Boolean getBoolean(String name, Boolean defaultValue) {
         String value = getProperty(name);
         return (null != value) ? Boolean.valueOf(value) : defaultValue;
     }
 
+    /**
+     * Accessor for an integer property; returns the parsed integer if the
+     * property value can be parsed, returns null if the property is not
+     * defined and throws <code>RuntimeException</code> (with a wrapped
+     * <code>NumberFormatException</code>) if the property is available but
+     * can't be parsed to an integer.
+     * "
+     * @param name The property name to look up
+     * @return The integer value for the property, or null if not present
+     * @throws RuntimeException If the value can't be parsed to an integer
+     */
     public Integer getInteger(String name) {
         return getInteger(name, null);
     }
 
+
+    /**
+     * Accessor for an integer property; returns the parsed integer if the
+     * property value can be parsed, returns a default if the property is not
+     * defined and throws <code>RuntimeException</code> (with a wrapped
+     * <code>NumberFormatException</code>) if the property is available but
+     * can't be parsed to an integer.
+     * "
+     * @param name The property name to look up
+     * @param defaultValue The default value when the property is not defined
+     * @return The integer value for the property, or the default if not present
+     * @throws RuntimeException If the value can't be parsed to an integer
+     */
     public Integer getInteger(String name, Integer defaultValue) {
         Integer result = defaultValue;
         String value = getProperty(name);
