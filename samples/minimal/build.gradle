@@ -1,0 +1,67 @@
+
+buildscript {
+  repositories {
+    mavenLocal()
+    if (project.hasProperty('mavenContextUrl'))
+      maven {
+        url "${mavenContextUrl}/${mavenRepoKey}"
+        credentials {
+          username(mavenUser as String)
+          password(mavenToken as String)
+        }
+      }
+    gradlePluginPortal()
+    maven { url 'https://dl.bintray.com/brambolt/public' }
+    jcenter()
+    mavenCentral()
+  }
+  dependencies {
+    classpath "com.brambolt.wrench:brambolt-wrench-properties-minimal-properties:${bramboltVersion}"
+  }
+}
+
+plugins {
+  id 'groovy'
+  id 'java-library'
+  id 'maven-publish'
+  id 'com.brambolt.gradle.staging' apply false
+}
+
+description = 'Minimal properties sample.'
+group = 'com.brambolt.wrench'
+version = bramboltVersion
+
+ext {
+  artifactId = 'brambolt-wrench-properties-minimal'
+}
+
+apply plugin: 'com.brambolt.gradle.staging'
+
+generateProperties {
+  prepend = true
+  sort = false
+  structured = false
+  trim = true
+}
+
+import com.brambolt.util.Maps
+import com.brambolt.wrench.InstanceProperties
+
+def minimalProperties = Maps.convert(InstanceProperties.getFor(
+  'some.minimal.system', project.projectDir))
+
+velocity {
+  context(
+    buildNumber        : project.buildNumber,
+    system             : minimalProperties.some.minimal.system)
+  strict = true
+}
+
+staging {
+  template(mask: 'minimal.properties.([a-z0-9]*)')
+  targetsDir(new File("${project.projectDir}/src/main/templates"))
+}
+
+task local(dependsOn: publishToMavenLocal)
+
+task all(dependsOn: local)

@@ -1,0 +1,67 @@
+
+buildscript {
+  repositories {
+    mavenLocal()
+    if (project.hasProperty('mavenContextUrl'))
+      maven {
+        url "${mavenContextUrl}/${mavenRepoKey}"
+        credentials {
+          username(mavenUser as String)
+          password(mavenToken as String)
+        }
+      }
+    gradlePluginPortal()
+    maven { url 'https://dl.bintray.com/brambolt/public' }
+    jcenter()
+    mavenCentral()
+  }
+  dependencies {
+    classpath "com.brambolt.wrench:brambolt-wrench-properties-sample-properties:${bramboltVersion}"
+  }
+}
+
+plugins {
+  id 'groovy'
+  id 'java-library'
+  id 'maven-publish'
+  id 'com.brambolt.gradle.staging' apply false
+}
+
+description = 'Properties sample.'
+group = 'com.brambolt.wrench'
+version = bramboltVersion
+
+ext {
+  artifactId = 'brambolt-wrench-properties-sample'
+}
+
+apply plugin: 'com.brambolt.gradle.staging'
+
+generateProperties {
+  prepend = true
+  sort = false
+  structured = false
+  trim = true
+}
+
+import com.brambolt.util.Maps
+import com.brambolt.wrench.InstanceProperties
+
+def sampleProperties = Maps.convert(InstanceProperties.getFor(
+  'some.example.system', project.projectDir))
+
+velocity {
+  context(
+    buildNumber        : project.buildNumber,
+    system             : sampleProperties.some.example.system)
+  strict = true
+}
+
+staging {
+  template(mask: 'system.properties.([a-z0-9]*)')
+  targetsDir(new File("${project.projectDir}/src/main/templates"))
+}
+
+task local(dependsOn: publishToMavenLocal)
+
+task all(dependsOn: local)

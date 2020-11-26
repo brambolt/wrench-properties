@@ -1,0 +1,26 @@
+
+pluginManagement {
+  repositories {
+    mavenLocal()
+    if (rootProject.hasProperty('mavenContextUrl'))
+      maven {
+        url "${mavenContextUrl}/${mavenRepoKey}"
+        credentials {
+          username(mavenUser as String)
+          password(mavenToken as String)
+        }
+      }
+    gradlePluginPortal()
+    maven { url 'https://dl.bintray.com/brambolt/public' }
+    jcenter()
+    mavenCentral()
+  }
+  plugins {
+    id 'com.brambolt.gradle.build.library' version bramboltVersion
+    id 'com.brambolt.gradle.testkit' version bramboltVersion
+    id 'com.brambolt.gradle.velocity' version bramboltVersion
+  }
+}
+
+rootProject.name = 'minimal-properties'
+

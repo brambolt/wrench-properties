@@ -47,6 +47,8 @@ dependencies {
   testImplementation "com.brambolt.gradle:brambolt-gradle-testkit:${version}"
 }
 
+test.finalizedBy(':samples:runAll')
+
 apply plugin: 'com.jfrog.artifactory'
 
 artifactory {

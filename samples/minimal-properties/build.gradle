@@ -1,0 +1,76 @@
+
+buildscript {
+  repositories {
+    mavenLocal()
+    gradlePluginPortal()
+    maven { url 'https://dl.bintray.com/brambolt/public' }
+    if (project.hasProperty('mavenContextUrl'))
+      maven {
+        url "${mavenContextUrl}/${mavenRepoKey}"
+        credentials {
+          username(mavenUser as String)
+          password(mavenToken as String)
+        }
+      }
+    jcenter()
+    mavenCentral()
+  }
+  dependencies {
+    classpath "com.brambolt.wrench:brambolt-wrench-properties:${bramboltVersion}"
+  }
+}
+
+plugins {
+  id 'groovy'
+  id 'java-library'
+  id 'com.brambolt.gradle.velocity' apply false
+  id 'maven-publish'
+}
+
+description = 'Minimal properties.'
+group = 'com.brambolt.wrench'
+version = bramboltVersion
+
+ext {
+  artifactId = 'brambolt-wrench-properties-minimal-properties'
+}
+
+apply plugin: 'com.brambolt.gradle.velocity'
+
+dependencies {
+  implementation "com.brambolt.wrench:brambolt-wrench-properties:${version}"
+  testImplementation "com.brambolt.gradle:brambolt-gradle-testkit:${version}"
+}
+sourceSets {
+  main {
+    resources {
+      srcDirs "${project.buildDir}/templates"
+    }
+  }
+}
+
+velocity {
+  strict = true
+  context(
+    buildNumber: project.buildNumber,
+    version: project.version
+  )
+  outputDir = new File(project.buildDir, 'templates')
+}
+
+processResources.dependsOn(velocity)
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      groupId project.group
+      artifactId project.artifactId
+      version project.version
+      from components.java
+    }
+  }
+}
+
+task local(dependsOn: publishToMavenLocal)
+
+task all(dependsOn: local)

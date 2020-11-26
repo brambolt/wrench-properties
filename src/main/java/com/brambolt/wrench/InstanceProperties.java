@@ -1,21 +1,42 @@
 package com.brambolt.wrench;
 
 import com.brambolt.Specification;
-import com.brambolt.util.Maps;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 
-public class ClientProperties extends Specification {
+public class InstanceProperties extends Specification {
 
     public static final String SECRETS_PROPERTIES_RESOURCE_NAME = "secrets.properties";
 
-    private static final String GROUP_ID = "com.brambolt.wrench";
+    private static final String DEFAULT_GROUP_ID = "com.brambolt.wrench";
 
-    private static final String CLIENT_PROPERTIES_RESOURCE_PATH = "com/brambolt/wrench/client.properties";
+    public static InstanceProperties getFor(File secretsDir) {
+        return getFor(DEFAULT_GROUP_ID, secretsDir);
+    }
+
+    public static InstanceProperties getFor(String groupId, File secretsDir) {
+        String groupPath = groupId.replaceAll("\\.", "/");
+        return getFor(
+            groupPath + "/application.properties",
+            groupPath + "/instance.properties",
+            groupId,
+            secretsDir);
+    }
+
+    public static InstanceProperties getFor(
+        String applicationPropertiesResourcePath,
+        String instancePropertiesResourcePath,
+        String groupId,
+        File secretsDir) {
+        ApplicationProperties applicationProperties =
+            ApplicationProperties.create(applicationPropertiesResourcePath);
+        return new InstanceProperties(
+            applicationProperties,
+            instancePropertiesResourcePath,
+            null, secretsDir, groupId);
+    }
 
     public static Properties getForPackage(String packageName, File secretsDir) {
         // No application, no defaults:
@@ -25,8 +46,8 @@ public class ClientProperties extends Specification {
 
     public static Properties getForPackageAndApplication(String packageName, Properties defaults, File secretsDir) {
         // Derive the properties resource path:
-        String resourcePath = packageName.replaceAll("\\.", "/") + "/client.properties";
-        return new ClientProperties(defaults, resourcePath, null, secretsDir, packageName);
+        String resourcePath = packageName.replaceAll("\\.", "/") + "/instance.properties";
+        return new InstanceProperties(defaults, resourcePath, null, secretsDir, packageName);
     }
 
     private final String resourcePath;
@@ -42,17 +63,18 @@ public class ClientProperties extends Specification {
 
     private final String groupPath;
 
-    protected ClientProperties(Properties defaults, String resourcePath, String resourcePathTemplate, File secretsDir) {
+    protected InstanceProperties(Properties defaults, String resourcePath, String resourcePathTemplate, File secretsDir) {
         this(defaults, resourcePath, resourcePathTemplate, secretsDir, null);
     }
 
-    protected ClientProperties(Properties defaults, String resourcePath, String resourcePathTemplate, File secretsDir, String groupId) {
+    protected InstanceProperties(Properties defaults, String resourcePath, String resourcePathTemplate, File secretsDir, String groupId) {
         super(defaults);
         this.resourcePath = resourcePath;
         this.resourcePathTemplate = resourcePathTemplate;
         this.groupId = groupId;
         this.groupPath = null != groupId ? groupId.replaceAll("\\.", "/") : null;
         loadClientProperties();
+        loadInstanceProperties();
         loadHostProperties();
         loadApplicationProperties();
         loadEnvironmentProperties();
@@ -106,8 +128,28 @@ public class ClientProperties extends Specification {
             : getResourcePath();
     }
 
+    private String getDefaultClientPropertiesResourcePath() {
+        return "com/brambolt/wrench/client.properties";
+    }
+
+    private String getInstancePropertiesResourcePath() {
+        String groupPath = getGroupPath();
+        return (null != groupPath)
+            ? groupPath + "/instance.properties"
+            : getResourcePath();
+    }
+
     private void loadClientProperties() {
-        loadPropertiesFromResource(getClientPropertiesResourcePath());
+        try {
+            loadPropertiesFromResource(getClientPropertiesResourcePath());
+        } catch (NoSuchElementException ignored) {
+            // Don't attempt to load from com.brambolt.wrench...
+            // loadPropertiesFromResource(getDefaultClientPropertiesResourcePath());
+        }
+    }
+
+    private void loadInstanceProperties() {
+        loadPropertiesFromResource(getInstancePropertiesResourcePath());
     }
 
     private void loadEnvironmentProperties() {

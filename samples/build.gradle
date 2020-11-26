@@ -1,0 +1,49 @@
+
+task buildMinimal(type: Exec) {
+  workingDir = new File(project.projectDir, 'minimal-properties')
+  commandLine(['../../gradlew', 'all', '--info', '--stacktrace', '--no-daemon',
+               "-PbramboltRelease=UNKNOWN",
+               "-PbramboltVersion=${bramboltVersion}",
+               "-PbuildNumber=SNAPSHOT"])
+  doFirst {
+    new File(workingDir, 'build').delete()
+  }
+}
+
+task runMinimal(type: Exec, dependsOn: buildMinimal) {
+  workingDir = new File(project.projectDir, 'minimal')
+  commandLine(['../../gradlew', 'all', '--info', '--stacktrace', '--no-daemon',
+               "-PbramboltRelease=UNKNOWN",
+               "-PbramboltVersion=${bramboltVersion}",
+               "-PbuildNumber=SNAPSHOT"])
+  doFirst {
+    new File(workingDir, 'build').delete()
+  }
+}
+
+task buildSimple(type: Exec) {
+  workingDir = new File(project.projectDir, 'simple-properties')
+  commandLine(['../../gradlew', 'all', '--info', '--stacktrace', '--no-daemon',
+               "-PbramboltRelease=UNKNOWN",
+               "-PbramboltVersion=${bramboltVersion}",
+               "-PbuildNumber=SNAPSHOT"])
+  doFirst {
+    new File(workingDir, 'build').delete()
+  }
+}
+
+task runSimple(type: Exec, dependsOn: buildSimple) {
+  workingDir = new File(project.projectDir, 'simple')
+  commandLine(['../../gradlew', 'all', '--info', '--stacktrace', '--no-daemon',
+               "-PbramboltRelease=UNKNOWN",
+               "-PbramboltVersion=${bramboltVersion}",
+               "-PbuildNumber=SNAPSHOT"])
+  doFirst {
+    new File(workingDir, 'build').delete()
+  }
+}
+
+task runAll {
+  dependsOn(runMinimal)
+  dependsOn(runSimple)
+}
