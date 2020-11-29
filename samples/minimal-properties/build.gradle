@@ -52,6 +52,7 @@ sourceSets {
 velocity {
   strict = true
   context(
+    bramboltVersion: project.bramboltVersion,
     buildNumber: project.buildNumber,
     version: project.version
   )

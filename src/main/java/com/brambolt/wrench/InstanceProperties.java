@@ -3,6 +3,8 @@ package com.brambolt.wrench;
 import com.brambolt.Specification;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 
@@ -63,6 +65,12 @@ public class InstanceProperties extends Specification {
 
     private final String groupPath;
 
+    private final Map<String, Object> cache;
+
+    private final Map<String, Object> system;
+
+    private final Map<String, Object> targets;
+
     protected InstanceProperties(Properties defaults, String resourcePath, String resourcePathTemplate, File secretsDir) {
         this(defaults, resourcePath, resourcePathTemplate, secretsDir, null);
     }
@@ -78,7 +86,11 @@ public class InstanceProperties extends Specification {
         loadHostProperties();
         loadApplicationProperties();
         loadEnvironmentProperties();
+        loadTargetProperties();
         loadSecrets(secretsDir);
+        cache = convertToMap();
+        system = prepareSystem();
+        targets = prepareTargets();
     }
 
     public String getResourcePath() {
@@ -139,6 +151,13 @@ public class InstanceProperties extends Specification {
             : getResourcePath();
     }
 
+    private String getTargetPropertiesResourcePath() {
+        String groupPath = getGroupPath();
+        return (null != groupPath)
+            ? groupPath + "/target.properties"
+            : getResourcePath();
+    }
+
     private void loadClientProperties() {
         try {
             loadPropertiesFromResource(getClientPropertiesResourcePath());
@@ -172,6 +191,14 @@ public class InstanceProperties extends Specification {
             loadPropertiesFromList(getApplicationsKey(), getResourcePathTemplate());
     }
 
+    private void loadTargetProperties() {
+        try {
+            loadPropertiesFromResource(getTargetPropertiesResourcePath());
+        } catch (NoSuchElementException ignored) {
+            // No resource found, no targets to load - ignore
+        }
+    }
+
     private void loadSecrets(File secretsDir) {
         File secretsFile = new File(secretsDir, SECRETS_PROPERTIES_RESOURCE_NAME);
         if (secretsFile.exists())
@@ -183,12 +210,99 @@ public class InstanceProperties extends Specification {
         }
         // We can't throw an exception if the secrets file is not found,
         // because the client properties are accessed both at deployment
-        // time (when a secrets file should be present) and build timimport java.util.Arrays;e
+        // time (when a secrets file should be present) and build time
         // (when no secrets should be used, and everything should come
-        // out of source control; hence, commenting this out:
-        // else
-        // throw new IllegalStateException("File not found: " + secretsFile.getAbsolutePath());
+        // out of source control).
     }
 
+    public Map<String, Object> getSystem() {
+        return system;
+    }
+
+    public Map<String, Object> getTargets() {
+        return targets;
+    }
+
+    private Map<String, Object> prepareSystem() {
+        String[] segments = groupId.split("\\.");
+        Map<String, Object> result = cache;
+        for (String segment: segments)
+            //noinspection unchecked
+            result = (Map<String, Object>) result.get(segment);
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> prepareTargets() {
+        Map<String, Object> system = getSystem();
+        if (!system.containsKey("targets"))
+            return new HashMap<>(); // No targets defined, nothing to do
+        Map<String, Object> targets = (Map<String, Object>) getSystem().get("targets");
+        String[] names = ((String) targets.get("listing")).split(",");
+        for (String name: names)
+            prepareTargetContext(name, (Map<String, Object>) targets.get(name));
+        targets.remove("listing");
+        return targets;
+    }
+
+    private void prepareTargetContext(String targetName, Map<String, Object> target) {
+        if (null == target)
+            throw new IllegalStateException("No specification found for target " + targetName);
+        if (target.containsKey("context"))
+            return; // Nothing to do, the context was defined already
+        Map<String, Object> context = new HashMap<>(system);
+        context.remove("targets"); // Avoid stack overflow in toString(), etc.
+        prepareTargetUnits(targetName, target, context);
+        target.put("context", context);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void prepareTargetUnits(String targetName, Map<String, Object> target, Map<String, Object> context) {
+        String[] unitTypes = new String[] { "environment", "host" };
+        if (system.containsKey("units")) {
+            Map<String, Object> units = (Map<String, Object>) system.get("units");
+            unitTypes = units.get("listing").toString().split(",");
+        }
+        for (String unitType: unitTypes)
+            prepareTargetUnitType(targetName, unitType, target, context);
+    }
+
+    private void prepareTargetUnitType(String targetName, String unitType, Map<String, Object> target, Map<String, Object> context) {
+        if (target.containsKey(unitType))
+            prepareTargetUnit(targetName, unitType, target, context);
+        else if (target.containsKey(unitType + "s"))
+            prepareTargetUnits(targetName, unitType, target, context);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void prepareTargetUnit(String targetName, String unitType, Map<String, Object> target, Map<String, Object> contextValues) {
+        if (!target.containsKey(unitType))
+            return; // Nothing to do
+        Map<String, Object> targetUnit = (Map<String, Object>) target.get(unitType);
+        String unitName = (String) targetUnit.get("name");
+        Map<String, Object> units = (Map<String, Object>) system.get(unitType + "s");
+        Map<String, Object> unit = (Map<String, Object>) units.get(unitName);
+        targetUnit.putAll(unit);
+        contextValues.put(unitType, targetUnit);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void prepareTargetUnits(String targetName, String unitType, Map<String, Object> target, Map<String, Object> contextValues) {
+        if (!target.containsKey(unitType + "s"))
+            return; // Nothing to do
+        Map<String, Object> units = (Map<String, Object>) system.get(unitType + "s");
+        Map<String, Object> targetUnits = (Map<String, Object>) target.get(unitType + "s");
+        String[] unitNames = targetUnits.get("listing").toString().split(",");
+        for (int i = 0; i < unitNames.length; ++i) {
+            String unitName = unitNames[i];
+            Map<String, Object> unit = (Map<String, Object>) units.get(unitName);
+            String key = unitType + i;
+            Map<String, Object> targetUnit = contextValues.containsKey(key)
+                ? (Map<String, Object>) contextValues.get(key)
+                : new HashMap<>();
+            targetUnit.putAll(unit);
+            contextValues.put(key, targetUnit);
+        }
+    }
 }
 

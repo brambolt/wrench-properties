@@ -43,7 +43,31 @@ task runSimple(type: Exec, dependsOn: buildSimple) {
   }
 }
 
+task runSimpleWithStaging(type: Exec, dependsOn: buildSimple) {
+  workingDir = new File(project.projectDir, 'simple-with-staging')
+  commandLine(['../../gradlew', 'all', '--info', '--stacktrace', '--no-daemon',
+               "-PbramboltRelease=UNKNOWN",
+               "-PbramboltVersion=${bramboltVersion}",
+               "-PbuildNumber=SNAPSHOT"])
+  doFirst {
+    new File(workingDir, 'build').delete()
+  }
+}
+
+task runRecommended(type: Exec, dependsOn: buildSimple) {
+  workingDir = new File(project.projectDir, 'recommended')
+  commandLine(['../../gradlew', 'all', '--info', '--stacktrace', '--no-daemon',
+               "-PbramboltRelease=UNKNOWN",
+               "-PbramboltVersion=${bramboltVersion}",
+               "-PbuildNumber=SNAPSHOT"])
+  doFirst {
+    new File(workingDir, 'build').delete()
+  }
+}
+
 task runAll {
   dependsOn(runMinimal)
   dependsOn(runSimple)
+  dependsOn(runSimpleWithStaging)
+  dependsOn(runRecommended)
 }

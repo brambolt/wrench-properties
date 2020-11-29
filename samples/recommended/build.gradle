@@ -33,29 +33,24 @@ version = bramboltVersion
 
 apply plugin: 'com.brambolt.gradle.staging'
 
-generateProperties {
-  prepend = true
-  sort = false
-  structured = false
-  trim = true
-}
-
-import com.brambolt.util.Maps
 import com.brambolt.wrench.InstanceProperties
 
-def sampleProperties = Maps.convert(InstanceProperties.getFor(
-  'some.example.system', project.projectDir))
+ext {
+  sampleProperties = InstanceProperties.getFor(
+    'some.example.system', project.projectDir)
+}
 
 velocity {
-  context(
-    buildNumber        : project.buildNumber,
-    system             : sampleProperties.some.example.system)
+  context(buildNumber: project.buildNumber)
   strict = true
 }
 
+stage {
+  includeAllResources = true
+}
+
 staging {
-  template(mask: 'system.properties.([a-z0-9]*)')
-  targetsDir(new File("${project.projectDir}/src/main/templates"))
+  targets(sampleProperties.getTargets())
 }
 
 task local(dependsOn: publishToMavenLocal)
